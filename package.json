@@ -1,0 +1,21 @@
+{
+  "name": "@jasonbelmonti/textrazor-api-cli",
+  "version": "0.0.1",
+  "description": "command line interface to TextRazor (https://www.textrazor.com/)",
+  "main": "news.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "news"
+  ],
+  "author": "Jason Belmonti <jasonbelmonti@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "colors": "^1.3.1",
+    "commander": "^2.17.1",
+    "dotenv": "^6.0.0",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.5"
+  }
+}
