@@ -1,10 +1,6 @@
 # TextRazor API CLI
 A [nodejs](https://nodejs.org/)-powered command-line interface for [TextRazor](https://www.textrazor.com/).
 
-+ [`sources`](#sources) :arrow_right: [/sources](https://newsapi.org/docs/endpoints/sources)
-+ [`everything`](#everything) :arrow_right: [/everything](https://newsapi.org/docs/endpoints/everything)
-+ [`top-headlines`](#topHeadlines) :arrow_right: [/top-headlines](https://newsapi.org/docs/endpoints/top-headlines)
-
 ## Getting Started
 
 ### Make `textrazor.js` executable
@@ -25,33 +21,27 @@ TEXTRAZOR_API_KEY=YOUR-KEY-HERE
 
 ## Commands
 
-### [Sources](https://newsapi.org/docs/endpoints/sources)
+### [Analyze](https://www.textrazor.com/docs/rest#analysis)
 
 #### Usage
 
-`sources [options]`
+`analyze [options]`
 
 #### Options
 ```
--l, --language [language]  Only return articles written in this language
--v, --verbose              If enabled, show description, url, category, language, country
--c, --category [category]  Only return articles relevant to this category
--w, --write [path]         Save the result to [path] (utf-8 encoding)
--h, --help                 output usage information
+-t, --text [text]              Content to analyze
+-u, --urls [urls]              A list of comma-separated urls to extract and analyze
+-e, --extractors <extractors>  A list of comma-separated extractors
+-w, --write [path]             Save the result to [path]/[encodeURIComponent(url or text)]
+-h, --help                     output usage information
 ```
 #### Examples
-
-##### Retreive all english language sources and write them to `sources.json`:
+Extract entities and topics from the phrase "Donald Trump is a moron" and save it to `donald/Donald%20Trump%20is%20a%20moron.json`:
 ```
-./news.js sources -l en -w sources.json
-```
-
-##### Retreive all "business" sources and save to `sources/business.json`:
-```
-./news.js sources -c business -w sources/business.json
+./textrazor.js analyze -t "Donald Trump is a moron" -e entities,topics  -w donald
 ```
 
-##### Retreive all sources and print all information:
+Extract entities and topics from a New York Times article and save it to `nyt/https%3A%2F%2Fwww.nytimes.com%2F2018%2F08%2F25%2Fus%2Fpolitics%2Frobert-mueller-russia-investigation.htm.json`:
 ```
-./news.js sources -v
+./textrazor.js analyze -u https://www.nytimes.com/2018/08/25/us/politics/robert-mueller-russia-investigation.html -e entities,topics  -w nyt
 ```

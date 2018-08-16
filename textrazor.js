@@ -8,26 +8,16 @@ const colors = require('colors/safe');
 // file system
 const fs = require('fs');
 
-// https://github.com/request/request-promise-native
-const rp = require('request-promise-native');
-
 // node.js command-line interfaces made easy
 // https://www.npmjs.com/package/commander
 const program = require('commander');
 
-const QueueProcessor = require('./queue-processor');
+const QueueProcessor = require('@jasonbelmonti/queue-processor');
+const analyze = require('./textrazor-sdk');
 
-// static configuration
-const TEXTRAZOR_URL = 'https://api.textrazor.com/'
+const NUM_PROCESSORS = 2;
 
-// user configuration
-const { TEXTRAZOR_API_KEY, TEXTRAZOR_NUM_PROCESSORS } = process.env;
-
-if(TEXTRAZOR_API_KEY === undefined) {
-  console.error(colors.red('no TextRazor API key defined in environment variable TEXTRAZOR_API_KEY'));
-  process.exit(1);
-}
-
+// wtf
 function writeJSONToFile(jsonData, path) {
   fs.writeFileSync(path, jsonData, 'utf8');
 }
@@ -36,30 +26,6 @@ class TextRazor {
   constructor(program) {
     // https://www.textrazor.com/docs/rest#analysis
     this._registerAnalyze(program);
-  }
-
-  analyze(params) {
-    const {
-      text,
-      url,
-      extractors,
-    } = params;
-
-    let form = { extractors };
-
-    if(text) {
-      form.text = text;
-    } else if (url) {
-      form.url = url;
-      form['cleanup.mode'] = 'cleanHTML';
-      form['cleanup.returnCleaned'] = true;
-    }
-
-    return rp.post({
-      url: TEXTRAZOR_URL,
-      headers: { 'x-textrazor-key': TEXTRAZOR_API_KEY },
-      form
-    });
   }
 
   _registerAnalyze(program) {
@@ -77,61 +43,84 @@ class TextRazor {
         write:path
       } = options;
 
-      const analyze = (analysisOptions) => {
-        const promise = new Promise((resolve, reject) => {
-          this.analyze(analysisOptions)
-          .then((rawResponse) => {
-
-            if(path) {
-              if (!fs.existsSync(path)){
-                  fs.mkdirSync(path);
-              }
-
-              const filename = analysisOptions.text ? analysisOptions.text : analysisOptions.url;
-              writeJSONToFile(rawResponse, `${path}/${encodeURIComponent(filename)}.json`);
-            }
-
-            resolve(rawResponse);
-          })
-          .catch((e) => {
-            console.log(colors.red(e));
-            reject(e);
-          })
-        });
-
-        return promise;
-      };
-
       if (text === undefined && urls === undefined) {
         console.error(colors.red('Missing required parameters! Supply either content or urls'));
         process.exit(1);
-      }
-
-      if (text) {
-        analyze({ extractors, text });
+      } else if (text) {
+        this._analyzeText(text, extractors, path);
       } else if(urls && urls.length > 0) {
-
         if(urls.length === 1) {
-          analyze({ extractors, url: urls[0] });
+          this._analyzeUrl(urls[0], extractors, path);
         } else {
-          for(let i = 0; i < TEXTRAZOR_NUM_PROCESSORS; i ++) {
-            const processor = new QueueProcessor(urls, `textrazor_${i}`);
-            processor.process(
-              (url) => {
-                return analyze({ extractors, url });
-              },
-              this._onQueueSuccess.bind(this),
-              this._onQueueError.bind(this),
-              this._onQueueComplete.bind(this)
-            );
-          }
+          this._analyzeUrlList(urls, extractors, path);
         }
       }
     });
   }
 
-  _onQueueSuccess(result, url) {
+  _analyze(analysisOptions) {
+    const promise = new Promise((resolve, reject) => {
+      analyze(analysisOptions).then((rawResponse) => {
+        resolve(rawResponse);
+      })
+      .catch((e) => {
+        console.log(colors.red(e));
+        reject(e);
+      });
+    });
+
+    return promise;
+  }
+
+  _analyzeText(text, extractors, path) {
+    this._analyze({ extractors, text }).then((result) => {
+      if(path) {
+        this._writeToJSON(result, path, text);
+      }
+    });
+  }
+
+  _analyzeUrl(url, extractors, path) {
+    this._analyze({ extractors, url }).then((result) => {
+      if(path) {
+        this._writeToJSON(result, path, url);
+      }
+    });
+  }
+
+  _analyzeUrlList(urls, extractors, path) {
+    for(let i = 0; i < NUM_PROCESSORS; i ++) {
+      const processor = new QueueProcessor(urls, `textrazor_${i}`, { path });
+      processor.process(
+        (url) => {
+          return this._analyze({ extractors, url });
+        },
+        this._onQueueSuccess.bind(this),
+        this._onQueueError.bind(this),
+        this._onQueueComplete.bind(this)
+      );
+    }
+  }
+
+  _writeToJSON(result, path, urlOrText) {
+    if(path) {
+      // make the directory if it doesn't exist
+      if (!fs.existsSync(path)){
+        fs.mkdirSync(path);
+      }
+
+      writeJSONToFile(result, `${path}/${encodeURIComponent(urlOrText)}.json`);
+    }
+  }
+
+  _onQueueSuccess(result, url, { path }) {
     console.log(colors.green(`✅ ${url}`));
+
+    if (path) {
+      this._writeToJSON(result, path, url);
+      console.log(colors.green(`saved analysis to ${path}`));
+    }
+
   }
 
   _onQueueError(error) {
@@ -140,7 +129,15 @@ class TextRazor {
   }
 
   _onQueueComplete(queue) {
-    console.log(colors.green.bold(`${queue.name} done!`));
+    console.log(colors.green(`${queue.name}`))
+    console.log(colors.gray(`-------------`))
+
+    // success total
+    console.log(colors.green.bold(`✅ ${queue.counts.success}`))
+
+    // error total
+    let color = queue.counts.error > 0 ? 'red' : 'gray';
+    console.log(colors[color](`❌ ${queue.counts.error}`));
   }
 }
 
