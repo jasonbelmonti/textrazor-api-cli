@@ -13,7 +13,7 @@ const fs = require('fs');
 const program = require('commander');
 
 const QueueProcessor = require('@jasonbelmonti/queue-processor');
-const analyze = require('./textrazor-sdk');
+const TextRazor = require('@jasonbelmonti/textrazor');
 
 const NUM_PROCESSORS = 2;
 
@@ -60,7 +60,7 @@ class TextRazor {
 
   _analyze(analysisOptions) {
     const promise = new Promise((resolve, reject) => {
-      analyze(analysisOptions).then((rawResponse) => {
+      TextRazor.analyze(analysisOptions).then((rawResponse) => {
         resolve(rawResponse);
       })
       .catch((e) => {
@@ -120,7 +120,6 @@ class TextRazor {
       this._writeToJSON(result, path, url);
       console.log(colors.green(`saved analysis to ${path}`));
     }
-
   }
 
   _onQueueError(error) {
