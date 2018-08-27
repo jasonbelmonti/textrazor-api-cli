@@ -22,7 +22,7 @@ function writeJSONToFile(jsonData, path) {
   fs.writeFileSync(path, jsonData, 'utf8');
 }
 
-class TextRazor {
+class TextRazorCLI {
   constructor(program) {
     // https://www.textrazor.com/docs/rest#analysis
     this._registerAnalyze(program);
@@ -144,7 +144,7 @@ class TextRazor {
 const { version } = require('./package.json');
 program.version(version);
 
-const textrazor = new TextRazor(program);
+const textrazor = new TextRazorCLI(program);
 program.parse(process.argv);
 
 // export an instantiated singleton
