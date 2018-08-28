@@ -13,7 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@jasonbelmonti/queue-processor": "^0.0.1",
-    "@jasonbelmonti/textrazor": "^0.0.2",
+    "@jasonbelmonti/textrazor": "^0.0.3",
     "colors": "^1.3.1",
     "commander": "^2.17.1",
     "dotenv": "^6.0.0",
