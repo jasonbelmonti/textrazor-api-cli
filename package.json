@@ -1,6 +1,6 @@
 {
   "name": "@jasonbelmonti/textrazor-api-cli",
-  "version": "0.0.3",
+  "version": "0.0.4-pre",
   "description": "command line interface to TextRazor (https://www.textrazor.com/)",
   "main": "news.js",
   "scripts": {
